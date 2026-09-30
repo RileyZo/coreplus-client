@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  release 构建的网络安全配置：默认不放行 HTTP 明文流量。
+
+  开发期使用的是 debug 构建，其配置在 app/src/debug/res/xml/network_security_config.xml，
+  同名资源会覆盖此文件，因此开发时不受这里限制。
+
+  后端上线 HTTPS 之后，此文件无需改动。
+  如果确实需要让 release 构建访问某个 HTTP 开发服务器，取消下面的注释并填入主机名/IP：
+
+  <domain-config cleartextTrafficPermitted="true">
+      <domain includeSubdomains="false">192.168.110.72</domain>
+  </domain-config>
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

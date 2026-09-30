@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  debug 构建的网络安全配置：放行 HTTP 明文流量。
+
+  后端目前部署在局域网（http://192.168.110.72:4326/api），且开发期地址可能变动，
+  因此这里直接放开明文，避免每换一次 IP 就要改一次配置。
+
+  本文件只存在于 debug 源集，release 构建使用 app/src/main/res/xml/ 下的同名文件。
+  后端切换到 HTTPS 之后可以删除本文件。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

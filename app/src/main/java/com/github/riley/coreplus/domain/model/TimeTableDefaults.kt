@@ -1,5 +1,6 @@
 package com.github.riley.coreplus.domain.model
 
+import java.time.LocalDate
 import java.time.LocalTime
 
 /**
@@ -43,6 +44,18 @@ object TimeTableDefaults {
         TimeTableSeason.SUMMER -> summer
         TimeTableSeason.WINTER -> winter
     }
+
+    /**
+     * 按月份推断首次使用时应选中哪一套作息表。
+     *
+     * 5~10 月为夏季，11~4 月为冬季。仅用于「用户从未选过」时的兜底；
+     * 一旦用户手动切换，以持久化的选择为准。
+     */
+    fun defaultSeason(today: LocalDate): TimeTableSeason =
+        if (today.monthValue in SUMMER_MONTHS) TimeTableSeason.SUMMER else TimeTableSeason.WINTER
+
+    /** 夏季作息适用的月份。 */
+    private val SUMMER_MONTHS = 5..10
 }
 
 /** 由「开始-结束」时间段构造一个大节，小节序号按传入顺序从 1 开始。 */

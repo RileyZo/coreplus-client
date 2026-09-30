@@ -11,6 +11,8 @@ import kotlinx.serialization.Serializable
  * 四小节连课在数据层拆成两个独立大节，仅在 UI 层依据
  * [name]、[location]、[teacher] 三个字段判断是否合并显示。
  *
+ * @property id 学期内唯一且稳定的标识，用于删除课程与 Compose 列表 key。
+ *   优先取自后端下发值；后端未下发时由 [syntheticId] 合成（合成值在课程改名后会变化）
  * @property name 课程名称，如 "计算机组成原理"
  * @property credit 课程学分。使用 [Double] 以兼容 0.5 / 1.5 这类半学分课程
  * @property attribute 课程属性，如 "必修"、"选修"、"限选"
@@ -22,6 +24,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class Course(
+    val id: String,
     val name: String,
     val credit: Double,
     val attribute: String,
@@ -30,4 +33,24 @@ data class Course(
     val week: Int,
     val weekday: Weekday,
     val bigSection: Int,
-)
+) {
+    /**
+     * 是否与 [other] 属于「同一门课」。
+     *
+     * 依据技术设计文档 §2.4：只看课程名称、上课教室、教师三个字段。
+     * UI 层用它判断同一天的相邻大节是否应该视觉合并为一个块。
+     */
+    fun isSameCourseAs(other: Course): Boolean =
+        name == other.name && location == other.location && teacher == other.teacher
+
+    companion object {
+        /**
+         * 后端未下发 `id` 时合成一个确定性标识。
+         *
+         * 同一格子上的同一门课每次合成结果相同，因此刷新后不会让 Compose 把它当成新课程。
+         * 使用无符号十六进制避免负数 hashCode 产生连续两个连字符。
+         */
+        fun syntheticId(week: Int, weekday: Weekday, bigSection: Int, name: String): String =
+            "w$week-d${weekday.value}-s$bigSection-${name.hashCode().toUInt().toString(16)}"
+    }
+}
