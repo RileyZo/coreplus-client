@@ -129,6 +129,7 @@ fun ScheduleScreen(
                     canGoPrevious = state.canGoPrevious,
                     canGoNext = state.canGoNext,
                     onBlockClick = viewModel::showCourseDetail,
+                    onOpenTimeTable = viewModel::showTimeTableEditor,
                     onPreviousWeek = viewModel::previousWeek,
                     onNextWeek = viewModel::nextWeek,
                 )
@@ -198,6 +199,7 @@ private fun TableContent(
     canGoPrevious: Boolean,
     canGoNext: Boolean,
     onBlockClick: (CourseBlock) -> Unit,
+    onOpenTimeTable: () -> Unit,
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
 ) {
@@ -232,10 +234,13 @@ private fun TableContent(
     ) {
         ScheduleTable(
             grid = grid,
+            timeTable = state.timeTable ?: return,
             modifier = Modifier.fillMaxSize(),
             weekStartDate = weekStartDate,
             today = today,
             showWeekend = state.showWeekend,
+            seasonLabel = state.season.label,
+            onOpenTimeTable = onOpenTimeTable,
             onBlockClick = onBlockClick,
         )
 

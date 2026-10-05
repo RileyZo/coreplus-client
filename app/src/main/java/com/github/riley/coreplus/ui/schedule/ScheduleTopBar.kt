@@ -85,10 +85,6 @@ fun ScheduleTopBar(
                 }
             },
             actions = {
-                // 作息表入口：直接显示当前季节，点一下就能改（§6.4）
-                TextButton(onClick = onOpenTimeTable) {
-                    Text(state.season.label)
-                }
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_more_vert),
