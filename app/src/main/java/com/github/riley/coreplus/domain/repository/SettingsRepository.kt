@@ -15,6 +15,9 @@ interface SettingsRepository {
     /** 课表布局（表格 / 列表）。 */
     val layout: Flow<ScheduleLayout>
 
+    /** 是否在课表中显示周末两列。 */
+    val showWeekend: Flow<Boolean>
+
     /**
      * 用户手动指定的学期第一周星期一。
      *
@@ -27,6 +30,8 @@ interface SettingsRepository {
     val termStartPrompted: Flow<Boolean>
 
     suspend fun setLayout(layout: ScheduleLayout)
+
+    suspend fun setShowWeekend(showWeekend: Boolean)
 
     /** 设置学期起始日；传 null 表示恢复自动推断。 */
     suspend fun setTermStartDate(date: LocalDate?)

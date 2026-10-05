@@ -60,6 +60,9 @@ data class ScheduleUiState(
     /** 布局方式。当前只实现了 [ScheduleLayout.TABLE]。 */
     val layout: ScheduleLayout = ScheduleLayout.TABLE,
 
+    /** 是否在课表中显示周末两列（周六、周日）。 */
+    val showWeekend: Boolean = true,
+
     /** 已算好的表格数据（含连课合并与实时时间）。 */
     val grid: ScheduleGrid? = null,
 

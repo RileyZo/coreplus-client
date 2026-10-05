@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.riley.coreplus.R
@@ -73,8 +72,6 @@ fun CourseBlockCell(
                         text = text,
                         style = if (index == 0) nameStyle else detailStyle,
                         color = color.content,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                         lineHeight = LineHeightText,
                     )
                 }

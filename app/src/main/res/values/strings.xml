@@ -14,6 +14,7 @@
     <string name="schedule_title">课表</string>
     <string name="schedule_week_label">第 %1$d 周</string>
     <string name="schedule_week_label_with_total">第 %1$d / %2$d 周</string>
+    <string name="schedule_select_week">选择周次</string>
     <string name="schedule_previous_week">上一周</string>
     <string name="schedule_next_week">下一周</string>
     <string name="schedule_go_to_current_week">本周</string>
@@ -25,6 +26,7 @@
     <string name="schedule_term_start_date">学期开始日期</string>
     <string name="schedule_load_sample">载入示例课表</string>
     <string name="schedule_list_placeholder">列表布局尚未实现，请先使用表格布局</string>
+    <string name="schedule_show_weekend">显示周末</string>
 
     <!-- 空状态 -->
     <string name="empty_no_cache_title">还没有课表</string>

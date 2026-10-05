@@ -1,6 +1,5 @@
 package com.github.riley.coreplus.ui.schedule.table
 
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -41,7 +39,7 @@ import java.time.LocalDate
  * 课表的**表格布局**（技术设计文档 §6.2）。
  *
  * 二维网格：列是星期几，行是大节。三个部分：
- * - 顶部星期表头：固定不随内容纵向滚动，但随内容**横向**同步滚动
+ * - 顶部星期表头：固定在顶部，不随内容纵向滚动，并与下方各列对齐
  * - [TimeRuler]：左侧行头，「关键时间线处显示时间；两根时间线中间显示节次编号（1-1、1-2…）」，
  *   横向固定、纵向随内容滚动
  * - [GridBody]：课程块区域，跨行的连课块由 [ScheduleGrid] 里的 [CourseBlock.span] 决定
@@ -59,12 +57,11 @@ import java.time.LocalDate
  * 若行高自适应内容，就得把测量结果在两个组件间来回传递，复杂度陡增且没有收益——
  * 课表本来就是等高的表格。
  *
- * ## 窄屏横向滚动
+ * ## 列宽与换行
  *
- * 7 列 + 时间轴在 360dp 宽的手机上每列只剩约 45dp，中文课程名会被截到一两个字。
- * 因此当可用宽度不足以给每列 [MinColumnWidth] 时，网格改为横向滚动
- * （表头与网格共用同一个横向 `ScrollState`，保持同步）；
- * 宽屏（平板、横屏）则正好铺满，不出现滚动。
+ * 不做横向滚动：去掉左侧时间轴后，剩余宽度由各列均分，因此所有列始终完整绘制在屏内。
+ * 窄屏下列宽会变小，课程名等信息改用**换行**而不是截断显示（见 [CourseBlockCell]）；
+ * 是否显示周末两列由 [showWeekend] 控制。
  *
  * ## 网格线用 `drawBehind` 画
  *
@@ -74,6 +71,7 @@ import java.time.LocalDate
  * @param grid 已算好时间与连课合并的表格数据
  * @param weekStartDate 所显示那一周的星期一，用于表头标注日期与高亮今天；null 时不标注
  * @param today 今天的日期，用于高亮当天所在的列
+ * @param showWeekend 是否显示周六、周日两列；false 时只显示周一至周五
  */
 @Composable
 fun ScheduleTable(
@@ -81,11 +79,13 @@ fun ScheduleTable(
     modifier: Modifier = Modifier,
     weekStartDate: LocalDate? = null,
     today: LocalDate? = null,
+    showWeekend: Boolean = true,
     onBlockClick: (CourseBlock) -> Unit = {},
 ) {
-    val days = remember { Weekday.entries.toList() }
+    val days = remember(showWeekend) {
+        Weekday.entries.filter { showWeekend || it.value <= Weekday.FRIDAY.value }
+    }
     val verticalScrollState = rememberScrollState()
-    val horizontalScrollState = rememberScrollState()
 
     // 只有「今天确实落在正在显示的这一周里」才高亮，否则回退显示上一周时会高亮错列
     val todayIndex = remember(weekStartDate, today) {
@@ -97,49 +97,40 @@ fun ScheduleTable(
         }
     }
 
-    BoxWithConstraints(modifier) {
-        // 去掉时间轴后剩下的宽度，才是 7 列能分到的
-        val availableForColumns = (maxWidth - RulerWidth).coerceAtLeast(0.dp)
-        val columnWidth = maxOf(availableForColumns / days.size, MinColumnWidth)
-        val gridWidth = columnWidth * days.size
-
-        Column(Modifier.fillMaxSize()) {
-            // 表头：左侧留白不滚动，七天表头与网格同步横向滚动
-            Row(Modifier.fillMaxWidth()) {
-                Spacer(Modifier.width(RulerWidth))
-                Row(Modifier.horizontalScroll(horizontalScrollState)) {
-                    days.forEach { day ->
-                        WeekdayHeaderCell(
-                            day = day,
-                            date = weekStartDate?.plusDays((day.value - 1).toLong()),
-                            today = today,
-                            modifier = Modifier.width(columnWidth),
-                        )
-                    }
-                }
-            }
-            HorizontalDivider()
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(verticalScrollState)
-                    // 上下留白，让首尾两条时间线上的文字不被滚动容器裁掉
-                    .padding(vertical = RulerVerticalPadding),
-            ) {
-                TimeRuler(grid = grid, rowHeight = RowHeight, modifier = Modifier.width(RulerWidth))
-                Row(Modifier.horizontalScroll(horizontalScrollState)) {
-                    GridBody(
-                        grid = grid,
-                        days = days,
-                        todayIndex = todayIndex,
-                        rowHeight = RowHeight,
-                        modifier = Modifier.width(gridWidth),
-                        onBlockClick = onBlockClick,
+    Column(modifier = modifier.fillMaxSize()) {
+        // 表头：去掉左侧时间轴后，剩余宽度由各列均分，所有列始终完整显示在屏内
+        Row(Modifier.fillMaxWidth()) {
+            Spacer(Modifier.width(RulerWidth))
+            Row(Modifier.weight(1f)) {
+                days.forEach { day ->
+                    WeekdayHeaderCell(
+                        day = day,
+                        date = weekStartDate?.plusDays((day.value - 1).toLong()),
+                        today = today,
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
+        }
+        HorizontalDivider()
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(verticalScrollState)
+                // 上下留白，让首尾两条时间线上的文字不被滚动容器裁掉
+                .padding(vertical = RulerVerticalPadding),
+        ) {
+            TimeRuler(grid = grid, rowHeight = RowHeight, modifier = Modifier.width(RulerWidth))
+            GridBody(
+                grid = grid,
+                days = days,
+                todayIndex = todayIndex,
+                rowHeight = RowHeight,
+                modifier = Modifier.weight(1f),
+                onBlockClick = onBlockClick,
+            )
         }
     }
 }
@@ -148,7 +139,7 @@ fun ScheduleTable(
  * 单个星期表头单元格。
  *
  * 有日期时在星期下面标出几号，并高亮今天；今天用主色加粗，周末用弱化色。
- * 宽度由调用方给定（[width]），保证与下面的网格列严格等宽。
+ * 宽度由调用方通过 `Modifier.weight(1f)` 给定，保证与下面的网格列严格等宽。
  */
 @Composable
 private fun WeekdayHeaderCell(
@@ -206,7 +197,7 @@ private sealed interface RulerItem {
  * 高度为 `行高 × span`（连课合并块因此自然跨越多行）。
  * 被合并覆盖的格子在 [ScheduleGrid] 里本就不持有块，所以不会画出重叠矩形。
  *
- * 总宽度由调用方通过 `Modifier.width` 给定（窄屏时为 `最小列宽 × 7`），
+ * 总宽度由调用方通过 `Modifier.weight(1f)` 占满剩余空间，
  * 因此这里直接用 `constraints.maxWidth` 反推列宽即可。
  */
 @Composable
@@ -379,14 +370,6 @@ private val RowHeight = 96.dp
  * 刻意压到最小，把宽度让给课程列。
  */
 private val RulerWidth = 44.dp
-
-/**
- * 窄屏下每列的最小宽度。
- *
- * 低于这个宽度中文课程名会被截到不可读，因此宁可横向滚动也不继续压缩。
- * 68dp 在默认字号下约能放 5 个汉字，放大字号下约 3~4 个。
- */
-private val MinColumnWidth = 68.dp
 
 /** 滚动内容的上下留白，避免首尾时间线上的文字被裁切。 */
 private val RulerVerticalPadding = 10.dp

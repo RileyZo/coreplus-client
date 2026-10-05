@@ -50,6 +50,22 @@ private fun ScheduleTableWeek1Preview() {
     }
 }
 
+@Preview(name = "表格·第1周（不显示周末）", showBackground = true, widthDp = 400, heightDp = 780)
+@Composable
+private fun ScheduleTableWeek1NoWeekendPreview() {
+    CoreTheme(dynamicColor = false) {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            ScheduleTable(
+                grid = sampleGrid(1),
+                modifier = Modifier.fillMaxSize(),
+                weekStartDate = PreviewWeekStart,
+                today = PreviewToday,
+                showWeekend = false,
+            )
+        }
+    }
+}
+
 @Preview(name = "表格·第2周（课程较少）", showBackground = true, widthDp = 400, heightDp = 780)
 @Composable
 private fun ScheduleTableWeek2Preview() {

@@ -88,6 +88,11 @@ class SettingsDataStore @Inject constructor(
         prefs[Keys.TERM_START_PROMPTED] ?: false
     }
 
+    /** 是否在课表中显示周末两列；默认显示。 */
+    val showWeekend: Flow<Boolean> = preferences.map { prefs ->
+        prefs[Keys.SHOW_WEEKEND] ?: true
+    }
+
     suspend fun setSelectedSeason(season: TimeTableSeason) {
         edit { it[Keys.SELECTED_SEASON] = season.name }
     }
@@ -108,6 +113,10 @@ class SettingsDataStore @Inject constructor(
         edit { it[Keys.TERM_START_PROMPTED] = prompted }
     }
 
+    suspend fun setShowWeekend(showWeekend: Boolean) {
+        edit { it[Keys.SHOW_WEEKEND] = showWeekend }
+    }
+
     private suspend fun edit(block: (MutablePreferences) -> Unit) {
         runCatching { context.settingsDataStore.edit(block) }
             .onFailure { Log.w(TAG, "写入设置失败", it) }
@@ -118,6 +127,7 @@ class SettingsDataStore @Inject constructor(
         val SELECTED_LAYOUT = stringPreferencesKey("selected_layout")
         val TERM_START_DATE = stringPreferencesKey("term_start_date")
         val TERM_START_PROMPTED = booleanPreferencesKey("term_start_prompted")
+        val SHOW_WEEKEND = booleanPreferencesKey("show_weekend")
     }
 
     private companion object {

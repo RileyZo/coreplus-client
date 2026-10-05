@@ -21,12 +21,18 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override val layout: Flow<ScheduleLayout> = dataStore.layout
 
+    override val showWeekend: Flow<Boolean> = dataStore.showWeekend
+
     override val termStartDate: Flow<LocalDate?> = dataStore.termStartDate
 
     override val termStartPrompted: Flow<Boolean> = dataStore.termStartPrompted
 
     override suspend fun setLayout(layout: ScheduleLayout) {
         dataStore.setLayout(layout)
+    }
+
+    override suspend fun setShowWeekend(showWeekend: Boolean) {
+        dataStore.setShowWeekend(showWeekend)
     }
 
     override suspend fun setTermStartDate(date: LocalDate?) {

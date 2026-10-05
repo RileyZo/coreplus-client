@@ -1,5 +1,6 @@
 package com.github.riley.coreplus.ui.schedule
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -55,6 +58,11 @@ import java.time.LocalDate
  *
  * [ScheduleViewModel.messages] 是 `Channel`，`showSnackbar` 挂起直到用户看到，
  * 因此多条提示会依次播放而不会互相覆盖；旋转屏幕也不会重放（不是状态的一部分）。
+ *
+ * ## 周次切换
+ *
+ * 上一周 / 下一周通过课表主体（[TableContent]）上的**左右滑动**触发，
+ * 不再依赖顶部按钮或选择器内的导航箭头。
  */
 @Composable
 fun ScheduleScreen(
@@ -93,12 +101,12 @@ fun ScheduleScreen(
             ScheduleTopBar(
                 state = state,
                 showSampleEntry = BuildConfig.DEBUG,
-                onPreviousWeek = viewModel::previousWeek,
-                onNextWeek = viewModel::nextWeek,
-                onGoToCurrentWeek = viewModel::goToCurrentWeek,
                 onRefresh = viewModel::requestRefresh,
                 onOpenTimeTable = viewModel::showTimeTableEditor,
                 onSelectLayout = viewModel::setLayout,
+                onToggleShowWeekend = viewModel::toggleShowWeekend,
+                onSelectWeek = viewModel::selectWeek,
+                onGoToCurrentWeek = viewModel::goToCurrentWeek,
                 onOpenTermStartPicker = viewModel::showTermStartPicker,
                 onLoadSample = viewModel::loadSample,
             )
@@ -118,7 +126,11 @@ fun ScheduleScreen(
                     state = state,
                     weekStartDate = weekStartDate,
                     today = today,
+                    canGoPrevious = state.canGoPrevious,
+                    canGoNext = state.canGoNext,
                     onBlockClick = viewModel::showCourseDetail,
+                    onPreviousWeek = viewModel::previousWeek,
+                    onNextWeek = viewModel::nextWeek,
                 )
             }
 
@@ -175,25 +187,55 @@ fun ScheduleScreen(
  *
  * 即使这一周没有课也**照常画出网格与时间轴**，只在中间叠一条说明：
  * 空表格比一片空白更能说明「数据没问题，这周真的没课」。
+ *
+ * 表格主体通过左右滑动触发周次切换（上一周 / 下一周），滑动阈值约为 80dp。
  */
 @Composable
 private fun TableContent(
     state: ScheduleUiState,
     weekStartDate: LocalDate?,
     today: LocalDate,
+    canGoPrevious: Boolean,
+    canGoNext: Boolean,
     onBlockClick: (CourseBlock) -> Unit,
+    onPreviousWeek: () -> Unit,
+    onNextWeek: () -> Unit,
 ) {
     val grid = state.grid ?: run {
         CenteredProgress()
         return
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val density = LocalDensity.current
+    val swipeThresholdPx = with(density) { SWIPE_THRESHOLD_DP.toPx() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(canGoPrevious, canGoNext, swipeThresholdPx) {
+                var totalDrag = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { totalDrag = 0f },
+                    onHorizontalDrag = { change, amount ->
+                        change.consume()
+                        totalDrag += amount
+                    },
+                    onDragEnd = {
+                        if (totalDrag > swipeThresholdPx && canGoPrevious) {
+                            onPreviousWeek()
+                        } else if (totalDrag < -swipeThresholdPx && canGoNext) {
+                            onNextWeek()
+                        }
+                    },
+                )
+            },
+    ) {
         ScheduleTable(
             grid = grid,
             modifier = Modifier.fillMaxSize(),
             weekStartDate = weekStartDate,
             today = today,
+            showWeekend = state.showWeekend,
             onBlockClick = onBlockClick,
         )
 
@@ -273,3 +315,6 @@ private fun CenteredProgress() {
 }
 
 private const val DAYS_PER_WEEK = 7L
+
+/** 左右滑动切换周次的触发阈值。 */
+private val SWIPE_THRESHOLD_DP = 80.dp

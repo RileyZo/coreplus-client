@@ -96,19 +96,41 @@ class ScheduleViewModel @Inject constructor(
         val timeTables: Map<TimeTableSeason, TimeTable>,
         val season: TimeTableSeason,
         val layout: ScheduleLayout,
+        val showWeekend: Boolean,
+        val userTermStart: LocalDate?,
+    )
+
+    /** [RepositorySnapshot] 中来自除「显示周末」之外的五个流，分开组合以避免超过 5 元的 `combine` 重载。 */
+    private data class SnapshotBase(
+        val schedule: Schedule?,
+        val timeTables: Map<TimeTableSeason, TimeTable>,
+        val season: TimeTableSeason,
+        val layout: ScheduleLayout,
         val userTermStart: LocalDate?,
     )
 
     private val interaction = MutableStateFlow(Interaction())
 
     private val repositorySnapshot: Flow<RepositorySnapshot> = combine(
-        scheduleRepository.schedule,
-        timeTableRepository.timeTables,
-        timeTableRepository.selectedSeason,
-        settingsRepository.layout,
-        settingsRepository.termStartDate,
-    ) { schedule, timeTables, season, layout, userTermStart ->
-        RepositorySnapshot(schedule, timeTables, season, layout, userTermStart)
+        combine(
+            scheduleRepository.schedule,
+            timeTableRepository.timeTables,
+            timeTableRepository.selectedSeason,
+            settingsRepository.layout,
+            settingsRepository.termStartDate,
+        ) { schedule, timeTables, season, layout, userTermStart ->
+            SnapshotBase(schedule, timeTables, season, layout, userTermStart)
+        },
+        settingsRepository.showWeekend,
+    ) { base, showWeekend ->
+        RepositorySnapshot(
+            schedule = base.schedule,
+            timeTables = base.timeTables,
+            season = base.season,
+            layout = base.layout,
+            showWeekend = showWeekend,
+            userTermStart = base.userTermStart,
+        )
     }.flowOn(defaultDispatcher)   // buildState 里要跑连课合并，放到后台线程
 
     val uiState: StateFlow<ScheduleUiState> =
@@ -292,6 +314,13 @@ class ScheduleViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setLayout(layout) }
     }
 
+    /** 切换是否在课表中显示周末两列。 */
+    fun toggleShowWeekend() {
+        viewModelScope.launch {
+            settingsRepository.setShowWeekend(!uiState.value.showWeekend)
+        }
+    }
+
     fun showTermStartPicker() {
         interaction.update { it.copy(termStartPickerVisible = true) }
     }
@@ -368,6 +397,7 @@ class ScheduleViewModel @Inject constructor(
             timeTable = timeTable,
             season = season,
             layout = snapshot.layout,
+            showWeekend = snapshot.showWeekend,
             grid = ScheduleGridBuilder.build(displayed, timeTable),
             refreshing = ui.refreshing,
             loginVisible = ui.loginVisible,

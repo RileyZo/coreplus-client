@@ -9,10 +9,9 @@ import java.time.LocalTime
  * @property label 中文名称，如 "夏季"
  */
 enum class TimeTableSeason(val label: String) {
-    SUMMER("夏季"),
-    WINTER("冬季");
+    SUMMER("春夏季"),
+    WINTER("秋冬季");
 
-    /** 返回中文名称，例如 `TimeTableSeason.SUMMER.toString()` 得到 "夏季"。 */
     override fun toString(): String = label
 }
 
